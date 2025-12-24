@@ -99,6 +99,7 @@ Bid Marketplace,GC posts bid → subs apply via mobile,AI matching + historical 
 PayBrain,Manual photo verification → Stripe payout,AI auto-verify → instant payout
 SafeRate,Safety score → insurance quote,Live discount pricing with carrier API
 
+
 Product Architecture: AI Agent Ecosystem
 
 🧩 Three-Layer Stack
@@ -171,7 +172,7 @@ Year 1: $8M
 Year 2: $35M
 Year 3: $132M
 Year 4: $500M
-Year 5: $322M+ → Unicorn valuation ($10.2B+)
+Year 5: $800M+ → Unicorn valuation ($20.2B+)
 
 BuildBrainOS — The AI Operating System for Construction Execution
 “Procore stores data. BuildBrain thinks.
@@ -225,6 +226,11 @@ Procore/Autodesk: Custom 2-way sync via webhooks + OAuth
 Insurance: Vertafore, Duck Creek APIs
 Payments: Stripe Connect (marketplace + PayBrain)
 E-Sign: DocuSign + HelloSign (embedded in mobile)
+
+Admin + GC dashboard full access Payment to Subs
+Allow GC and Company to Post projects smart Listing marketplace and manage bids
+React Native + Expo     
+Mobile app for subs and supers 
 
 
 follow this Diagram tree Create Github repo Boilerplate make necessary change for Fulltack MVP microservice all source code  source code
@@ -404,6 +410,19 @@ buildbrainos/
 │   └── neo4j/                       # Knowledge Graph (optional for future)
 │       └── constraints.cql
 │
+|
+├── ── 📁 external-integrations/
+│   ├── bluebeam/
+│   │   └── main.py
+│   ├── procore/
+│   │   └── main.py
+│   ├── plangrid/
+│   │   └── main.py
+│   ├── autodesk-bim360/
+│   │   └── main.py
+│   └── smartsheet/
+│       └── main.py
+|
 ├── 📁 infra/                        # Infrastructure as Code
 │   ├── k8s/
 │   │   ├── namespace.yaml
@@ -459,5 +478,1496 @@ buildbrainos/
 ├── 📄 README.md
 ├── 📄 Makefile                      # Common commands: make dev, make test, make deploy
 └── 📄 docker-compose.yml            # For local dev (gateway + all services)
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── env.example
+├── TODO.md
+
+
+
+
+
+
+/////////////////
+
+
+buildbrainos/
+├── .gitignore
+├── README.md
+├── Makefile
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── env.example
+├── TODO.md
+│
+├── client/
+│   ├── mobile/
+│   │   ├── app.json
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   ├── screens/
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── Projects/
+│   │   │   ├── BlueprintViewer.tsx
+│   │   │   ├── SafetyInspection.tsx
+│   │   │   └── BidMarketplace.tsx
+│   │   ├── lib/
+│   │   │   ├── database/
+│   │   │   ├── location/
+│   │   │   └── voice/
+│   │   ├── assets/
+│   │   ├── hooks/
+│   │   ├── navigation/
+│   │   ├── services/
+│   │   │   └── api.ts
+│   │   └── i18n/
+│   │
+│   ├── web-mobile/
+│   │   ├── public/
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   ├── pages/
+│   │   │   ├── hooks/
+│   │   │   ├── services/
+│   │   │   │   └── api.ts
+│   │   │   ├── i18n/
+│   │   │   └── App.tsx
+│   │   └── vite.config.ts
+│   │
+│   └── web-desktop/
+│       ├── public/
+│       ├── src/
+│       │   ├── components/
+│       │   ├── pages/
+│       │   ├── layout/
+│       │   ├── services/
+│       │   │   └── api.ts
+│       │   ├── i18n/
+│       │   └── App.tsx
+│       └── next.config.js
+│
+├── gateway/
+│   ├── server.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── projects.js
+│   │   └── agents.js
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── graphql/
+│   │   └── schema.graphql
+│   ├── docker-compose.yml
+│   └── Dockerfile
+│
+├── services/
+│   ├── auth-service/
+│   │   ├── src/
+│   │   │   ├── controllers/
+│   │   │   ├── models/
+│   │   │   │   └── user.entity.ts
+│   │   │   ├── services/
+│   │   │   │   └── auth.service.ts
+│   │   │   └── main.ts
+│   │   ├── package.json
+│   │   ├── Dockerfile
+│   │   └── k8s/
+│   │       └── deployment.yaml
+│   │
+│   ├── user-service/
+│   │   ├── src/
+│   │   │   ├── controllers/
+│   │   │   │   └── user.controller.ts
+│   │   │   └── models/
+│   │   │       └── user.entity.ts
+│   │   ├── Dockerfile
+│   │   ├── prisma/
+│   │   │   └── schema.prisma
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   │
+│   ├── project-service/
+│   │   ├── src/
+│   │   │   ├── controllers/
+│   │   │   │   └── project.controller.ts
+│   │   │   └── models/
+│   │   │       └── project.entity.ts
+│   │   └── Dockerfile
+│   │
+│   ├── document-service/
+│   │   ├── src/
+│   │   │   ├── controllers/
+│   │   │   │   └── document.controller.ts
+│   │   │   └── services/
+│   │   │       └── pdf.extractor.ts
+│   │   └── Dockerfile
+│   │
+│   ├── compliance-service/
+│   │   ├── src/
+│   │   │   ├── controllers/
+│   │   │   │   └── compliance.controller.ts
+│   │   │   └── services/
+│   │   │       └── ocr.validator.ts
+│   │   └── Dockerfile
+│   │
+│   ├── marketplace-service/
+│   │   ├── src/
+│   │   │   ├── controllers/
+│   │   │   │   └── marketplace.controller.ts
+│   │   │   └── models/
+│   │   │       └── bid.entity.ts
+│   │   └── Dockerfile
+│   │
+│   ├── payment-service/
+│   │   ├── src/
+│   │   │   ├── controllers/
+│   │   │   │   └── payment.controller.ts
+│   │   │   └── models/
+│   │   │       └── payment.entity.ts
+│   │   └── Dockerfile
+│   │
+│   ├── notification-service/
+│   │   ├── src/
+│   │   │   └── services/
+│   │   │       └── twilio.service.ts
+│   │   └── Dockerfile
+│   │
+│   ├── analytics-service/
+│   │   ├── src/
+│   │   │   └── controllers/
+│   │   │       └── analytics.controller.ts
+│   │   └── Dockerfile
+│   │
+│   └── shared-types/
+│       ├── src/
+│       │   └── types/
+│       │       ├── user.interface.ts
+│       │       ├── project.interface.ts
+│       │       └── ai-agent.interface.ts
+│       └── package.json
+│
+├── ai-agents/
+│   ├── blueprint-agent/
+│   │   ├── app.py
+│   │   ├── models/
+│   │   │   └── blueprint_analyzer.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile
+│   │
+│   ├── safety-agent/
+│   │   ├── app.py
+│   │   ├── models/
+│   │   │   └── safety_detector.py
+│   │   └── Dockerfile
+│   │
+│   ├── compliance-ocr-agent/
+│   │   ├── app.py
+│   │   ├── models/
+│   │   │   └── coi_validator.py
+│   │   └── Dockerfile
+│   │
+│   ├── bid-scraper-agent/
+│   │   ├── scraper.py
+│   │   ├── models/
+│   │   │   └── bid_matcher.py
+│   │   └── Dockerfile
+│   │
+│   └── scheduler-agent/
+│       ├── app.py
+│       ├── models/
+│       │   └── scheduler.py
+│       └── Dockerfile
+│
+├── orchestration/
+│   ├── workflows/
+│   │   ├── rfi_workflow.py
+│   │   ├── sub_onboarding.py
+│   │   └── safety_alert.py
+│   ├── activities/
+│   │   ├── send_sms.py
+│   │   ├── validate_insurance.py
+│   │   └── extract_blueprint.py
+│   ├── docker-compose.yml
+│   └── Dockerfile
+│
+├── external-integrations/
+│   ├── bluebeam/
+│   │   └── main.py
+│   ├── procore/
+│   │   └── main.py
+│   ├── plangrid/
+│   │   └── main.py
+│   ├── autodesk-bim360/
+│   │   └── main.py
+│   └── smartsheet/
+│       └── main.py
+│
+├── data/
+│   ├── mongodb/
+│   │   ├── schema.prisma
+│   │   ├── migrations/
+│   │   └── seed.ts
+│   │
+│   ├── qdrant/
+│   │   ├── config.yaml
+│   │   └── collections/
+│   │       └── buildbrain.yaml
+│   │
+│   ├── redis.conf
+│   │
+│   └── neo4j/
+│       └── constraints.cql
+│
+├── infra/
+│   ├── k8s/
+│   │   ├── namespace.yaml
+│   │   ├── ingress.yaml
+│   │   ├── postgres-deployment.yaml
+│   │   ├── mongodb-statefulset.yaml
+│   │   ├── redis-deployment.yaml
+│   │   └── kustomization.yaml
+│   │
+│   ├── docker/
+│   │   └── docker-compose.yml
+│   │
+│   └── terraform/
+│       ├── main.tf
+│       ├── variables.tf
+│       └── eks-cluster.tf
+│
+├── monitoring/
+│   ├── prometheus.yml
+│   ├── grafana/
+│   │   └── dashboards/
+│   │       └── buildbrain.json
+│   ├── elasticsearch/
+│   │   └── logstash.conf
+│   └── sentry.config.js
+│
+├── admin-dashboard/
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── Users.tsx
+│   │   │   ├── Reports.tsx
+│   │   │   ├── Analytics.tsx
+│   │   │   └── Settings.tsx
+│   │   ├── services/
+│   │   │   └── adminApi.ts
+│   │   └── layout/
+│   └── Dockerfile
+│
+├── tests/
+│   ├── unit/
+│   │   ├── auth.test.ts
+│   │   └── project.test.ts
+│   ├── integration/
+│   │   └── match.integration.test.ts
+│   └── e2e/
+│       ├── mobile.test.js
+│       └── web.test.js
+│
+├── .github/
+│   └── workflows/
+│       ├── ci-cd.yml
+│       ├── deploy.yml
+│       └── nginx-deploy.yml
+│
+├── nginx/
+│   └── nginx.conf
+│
+└── scripts/
+    ├── deploy.sh
+    ├── migrate-db.js
+    └── seed-ai-models.py
+
+
+
+
+  #  ////////////////////////   GPT Answer     where is tth Ai solution ////    
+
+You’re asking for the Shopify + Stripe + OpenAI of construction — 
+not a slide deck, but a real, opinionated, shippable full-stack AI OS with a marketplace,
+payments, agents, and infra.
+
+Below is a practical, cut-through answer:
+
+✅ Clear product abstraction (the “Shopify moment”)
+✅ Exact MVP cut (what you build first vs later)
+✅ Agent OS architecture (how it “thinks”)
+✅ Full-stack technical stack (validated, cost-aware)
+✅ GitHub monorepo boilerplate with real code stubs
+✅ 90-day build plan engineers can actually execute
+
+I will not repeat the business pitch — you already nailed it.
+This answer is about turning this into software. 
+1. THE SHOPIFY + STRIPE + OPENAI MOMENT (PRODUCT ABSTRACTION)
+Shopify did 3 things:
+
+Abstracted commerce primitives
+Made payments default
+Let developers extend everything
+BuildBrain does the same for construction:
+Shopify	BuildBrain
+Products	Projects
+Orders	Schedules / RFIs / Pay Apps
+Inventory	Materials + Sub Availability
+Payments	PayBrain (Stripe Connect)
+Apps	AI Agents + Integrations
+
+THE SHOPIFY + STRIPE + OPENAI MOMENT (PRODUCT ABSTRACTION)
+Shopify did 3 things:
+
+Abstracted commerce primitives
+
+Made payments default
+
+Let developers extend everything
+
+BuildBrain does the same for construction:
+Shopify	BuildBrain
+Products	Projects
+Orders	Schedules / RFIs / Pay Apps
+Inventory	Materials + Sub Availability
+Payments	PayBrain (Stripe Connect)
+Apps	AI Agents + Integrations
+
+
+
+
+
+👉 Your core abstraction is NOT “projects.”
+👉 It is Execution Units (tasks, pay apps, inspections, RFIs).
+
+Everything else hangs off that.
+2. MVP HARD CUT (WHAT YOU BUILD FIRST)
+You do not build everything in your tree in v1.
+
+🚀 MVP = “Payment Applications OS”
+Why?
+Universal pain
+Clear ROI
+Fastest wedge to fintech + insurance
+Turns AI into money
+MVP Includes (90 days)
+
+✅ Project setup
+✅ Blueprint ingestion (PDF → text)
+✅ Subcontractor onboarding
+✅ Insurance OCR + validation
+✅ Monthly payment application (AIA G702/G703-like)
+✅ Photo + GPS verification
+✅ Stripe Connect payout
+✅ Admin + GC dashboard
+
+Explicitly NOT in MVP
+
+❌ Full BIM
+❌ Full safety computer vision
+❌ Live insurance pricing
+❌ Massive scraping (start with SAM.gov only)
+
+3. AI AGENT OPERATING SYSTEM (HOW IT “THINKS”)
+Core Principle
+Agents do not chat. Agents observe, decide, and act.
+Agent Lifecycle
+Event → Context → Reason → Action → Verification → Memory
+
+Example: PayBrain Agent
+Photo Uploaded
+→ Retrieve blueprint + schedule
+→ Compare % complete
+→ Check GPS + timestamp
+→ Validate insurance
+→ Approve / Flag
+→ Trigger Stripe payout
+
+Orchestration
+Temporal = deterministic workflows
+LangGraph = agent state machines
+FastAPI = AI microservices
+NestJS = system-of-record services
+
+4. TECH STACK (VALIDATED, COST-EFFECTIVE)
+Frontend
+React Native + Expo (mobile + OTA)
+Next.js 14 (admin / GC portal)
+PWA for tablets
+Backend
+NestJS (TypeScript) microservices
+FastAPI (Python) for AI
+Kong / NGINX gateway
+AI
+Llama 3.1 8B / 70B (self-hosted via vLLM)
+Qwen 2.5 VL (blueprints + photos)
+DocTR + Tesseract (documents)
+Qdrant (RAG)
+Data
+MongoDB + Prisma
+Redis (cache + pub/sub)
+S3-compatible storage
+Payments
+Stripe Billing
+Stripe Connect (Express accounts)
+Plaid (later)
+
+5. GITHUB MONOREPO BOILERPLATE (REAL, RUNNABLE)
+Below is a minimal but correct boilerplate you can paste into GitHub and expand.
+
+90-DAY BUILD PLAN (REALISTIC)
+Month 1 – Core OS
+
+Auth + RBAC
+Projects + subs
+Blueprint upload
+Insurance OCR
+Stripe subscriptions
+
+Month 2 – PayBrain
+Payment applications
+Photo + GPS verification
+Stripe Connect payouts
+Admin dashboard
+Month 3 – Marketplace Wedge
+
+Bid posting
+Sub applications
+Matching logic
+Notifications
+
+👉 You can sell this by Day 60
+
+7. WHY THIS BECOMES A $10B COMPANY
+Data Gravity
+Payments + compliance = permanent lock-in
+
+AI Compounding
+Every job improves prediction
+
+Fintech Margins
+Invisible 1% on trillions
+
+No Horizontal Competition
+Salesforce can’t do this
+
+Procore won’t
+Procore stores PDFs.
+BuildBrain releases money.
+
+
+NEXT STEPS (I CAN GO DEEPER)
+If you want, I can next:
+Generate full Prisma schemas
+Create Stripe Connect onboarding flow
+Write agent prompts + LangGraph graphs
+Produce CI/CD + Terraform
+Cut this to a 30-day ultra-lean MVP
+
+Just tell me which layer you want next.
+
+
+
+
+
+
+
+
+///////////////////
+
+
+
+//////////////////////////////    from Gemini 3 flash   //////////////
+
+
+
+2. The Unified Prisma Schema (MongoDB)
+This schema powers the entire "OS" + "Marketplace" + "Bank". It merges your requested structures into a clean, 
+single-source-of-truth.
+
+File: packages/database/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. IDENTITY & ROLES (The "OS" Layer)
+// ==========================================
+
+model User {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  email       String    @unique
+  name        String
+  phone       String?
+  role        UserRole  @default(SUB_CONTRACTOR)
+  companyId   String?   @db.ObjectId
+  company     Company?  @relation(fields: [companyId], references: [id])
+  createdAt   DateTime  @default(now())
+  
+  // Relations
+  projectsOwned    Project[] @relation("ProjectOwner")
+  bidsSubmitted    BidSubmission[]
+  tasksAssigned    Task[]
+  notifications    Notification[]
+}
+
+model Company {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  type          CompanyType
+  ein           String?      @unique
+  bondingLimit  Float?       // Max project size they can take
+  insuranceDocs InsuranceDocument[]
+  users         User[]
+  createdAt     DateTime     @default(now())
+}
+
+enum UserRole {
+  GC_ADMIN
+  SUPERINTENDENT
+  SUB_CONTRACTOR
+  WORKER
+}
+
+enum CompanyType {
+  GENERAL_CONTRACTOR
+  SUBCONTRACTOR
+  INSURANCE_CARRIER
+}
+
+// ==========================================
+// 2. PROJECT INTELLIGENCE (The "Brain" Layer)
+// ==========================================
+
+model Project {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  address        String
+  ownerId        String    @db.ObjectId
+  owner          User      @relation("ProjectOwner", fields: [ownerId], references: [id])
+  status         ProjectStatus @default(PLANNING)
+  
+  // The "Brain" Components
+  blueprints     Blueprint[]
+  rfis           RFI[]
+  safetyLogs     SafetyLog[]
+  tasks          Task[]
+  bids           Bid[]
+  payments       Payment[]
+  
+  createdAt      DateTime  @default(now())
+}
+
+model Blueprint {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String   @db.ObjectId
+  project     Project  @relation(fields: [projectId], references: [id])
+  fileUrl     String
+  version     Int      @default(1)
+  
+  // AI Analysis Results
+  vectorId    String?  // Reference to Qdrant embedding
+  summary     String?
+  components  Json?    // { "electrical": ["switch_2a", "panel_b"], "hvac": [...] }
+  clashes     Json?    // [{ "x": 10, "y": 20, "issue": "Pipe hits Beam" }]
+  
+  processedAt DateTime?
+}
+
+model RFI {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId      String   @db.ObjectId
+  project        Project  @relation(fields: [projectId], references: [id])
+  
+  question       String
+  suggestedAnswer String? // AI Auto-Draft
+  status         RFIStatus @default(OPEN)
+  
+  impactCost     Float?
+  impactDays     Int?
+  
+  createdAt      DateTime @default(now())
+}
+
+// ==========================================
+// 3. MARKETPLACE & BIDDING (The "Wedge")
+// ==========================================
+
+model Bid {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String   @db.ObjectId
+  project     Project  @relation(fields: [projectId], references: [id])
+  
+  title       String
+  budgetMax   Float?
+  trade       String   // e.g. "Plumbing"
+  deadline    DateTime
+  
+  submissions BidSubmission[]
+  status      BidStatus @default(OPEN)
+}
+
+model BidSubmission {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  bidId       String   @db.ObjectId
+  bid         Bid      @relation(fields: [bidId], references: [id])
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+  
+  amount      Float
+  proposalUrl String
+  aiScore     Float?   // 0-100 Match Score based on history/bonding
+  
+  status      SubmissionStatus @default(PENDING)
+}
+
+// ==========================================
+// 4. FINTECH & COMPLIANCE (The "Bank")
+// ==========================================
+
+model Payment {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String    @db.ObjectId
+  project     Project   @relation(fields: [projectId], references: [id])
+  
+  amount      Float
+  payeeId     String    @db.ObjectId // Subcontractor Company ID
+  
+  // "PayBrain" Logic
+  taskId      String?   @db.ObjectId
+  task        Task?     @relation(fields: [taskId], references: [id])
+  
+  verificationPhoto String?
+  gpsCoords         String?
+  aiVerified        Boolean @default(false)
+  
+  status      PaymentStatus @default(PENDING_VERIFICATION)
+  stripeId    String?
+  
+  // Factoring
+  isFactored  Boolean   @default(false)
+  factorFee   Float     @default(0.0) // If instant pay, this is populated
+}
+
+model InsuranceDocument {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId    String   @db.ObjectId
+  company      Company  @relation(fields: [companyId], references: [id])
+  
+  type         String   // "GL", "WorkersComp"
+  expiryDate   DateTime
+  coverage     Float
+  fileUrl      String
+  
+  isValid      Boolean  @default(false)
+  verificationLog String? // "OCR detected match with requirements"
+}
+
+// ==========================================
+// 5. FIELD OPERATIONS
+// ==========================================
+
+model Task {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String   @db.ObjectId
+  project     Project  @relation(fields: [projectId], references: [id])
+  assignedTo  String?  @db.ObjectId
+  user        User?    @relation(fields: [assignedTo], references: [id])
+  
+  title       String
+  status      TaskStatus @default(PENDING)
+  
+  // Geofencing
+  geoLat      Float?
+  geoLng      Float?
+  
+  payment     Payment[]
+}
+
+model SafetyLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String   @db.ObjectId
+  project     Project  @relation(fields: [projectId], references: [id])
+  
+  imageUrl    String
+  violations  Json?    // ["No Hard Hat", "Unsafe Ladder"]
+  riskScore   Float
+  resolved    Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  message   String
+  read      Boolean  @default(false)
+  type      String   // "BID_ALERT", "SAFETY_WARN", "PAYMENT_SENT"
+}
+
+// Enums
+enum ProjectStatus { PLANNING; ACTIVE; HOLD; COMPLETED }
+enum RFIStatus { OPEN; DRAFTED; SENT; RESOLVED }
+enum BidStatus { OPEN; CLOSED; AWARDED }
+enum SubmissionStatus { PENDING; REJECTED; ACCEPTED }
+enum PaymentStatus { PENDING_VERIFICATION; VERIFIED; PAID; FAILED }
+enum TaskStatus { PENDING; IN_PROGRESS; DONE_PENDING_REVIEW; COMPLETED }
+
+
+
+///////////////
+
+
+
+
+
+///
+
+# BuildBrainOS MVP Development Plan
+
+## Phase 1: Foundation Setup (Week 1)
+- [x] Create Prisma schema for MongoDB
+- [x] Set up project structure and README
+- [ ] Configure environment variables and Docker setup
+- [ ] Set up basic authentication service
+- [ ] Create user management service
+- [ ] Implement project CRUD operations
+
+## Phase 2: Core Services (Week 2-3)
+- [ ] Build marketplace service (bids)
+- [ ] Implement document upload service
+- [ ] Create compliance validation service
+- [ ] Set up payment processing with Stripe
+- [ ] Build notification service
+
+## Phase 3: AI Agents (Week 4)
+- [ ] Blueprint text extraction agent
+- [ ] Basic OCR for compliance documents
+- [ ] Simple bid matching algorithm
+- [ ] Safety photo classification
+
+## Phase 4: Frontend Development (Week 5-6)
+- [ ] Mobile app skeleton (React Native + Expo)
+- [ ] Admin dashboard (Next.js)
+- [ ] Basic authentication flows
+- [ ] Project management UI
+
+## Phase 5: Integration & Testing (Week 7)
+- [ ] API Gateway setup
+- [ ] End-to-end testing
+- [ ] Performance optimization
+- [ ] Security audit
+
+## Phase 6: Deployment & Launch (Week 8)
+- [ ] Docker containerization
+- [ ] Kubernetes deployment
+- [ ] CI/CD pipeline
+- [ ] Production monitoring
+
+## MVP Features Checklist
+### Core SaaS (OS)
+- [ ] User authentication & profiles
+- [ ] Project management
+- [ ] Basic blueprint upload & OCR
+- [ ] Compliance document upload
+- [ ] Safety logging
+- [ ] Voice interface (basic)
+
+### Marketplace
+- [ ] Bid posting
+- [ ] Bid applications
+- [ ] Basic AI matching
+
+### Payments
+- [ ] Stripe integration
+- [ ] Payment processing
+- [ ] Basic PayBrain logic
+
+### Mobile App
+- [ ] Offline sync
+- [ ] GPS tracking
+- [ ] Photo uploads
+- [ ] Push notifications
+
+### Admin Dashboard
+- [ ] User management
+- [ ] Project oversight
+- [ ] Analytics dashboard
+
+## Implementation Progress
+- [ ] Create shared types package
+- [ ] Implement auth-service (NestJS)
+- [ ] Implement user-service (NestJS)
+- [ ] Implement project-service (NestJS)
+- [ ] Implement payment-service (NestJS)
+- [ ] Implement marketplace-service (NestJS)
+- [ ] Implement document-service (NestJS)
+- [ ] Implement compliance-service (NestJS)
+- [ ] Implement notification-service (NestJS)
+- [ ] Implement analytics-service (NestJS)
+- [ ] Implement AI agents (Python FastAPI)
+- [ ] Build mobile app (React Native + Expo)
+- [ ] Build web-mobile PWA (React + Vite)
+- [ ] Build admin dashboard (Next.js)
+- [ ] Set up Kong API gateway
+- [ ] Implement Temporal workflows
+- [ ] Configure Docker Compose
+- [ ] Set up monitoring stack
+- [ ] Create tests
+- [ ] Write deployment scripts
+- [ ] Create Makefile
+- [ ] Set up environment configuration
+
+
+//
+
+Implement all NestJS microservices (auth, user, project, document, compliance, marketplace, payment, notification, analytics).
+Create shared types package for type consistency.
+Implement Python FastAPI AI agents.
+Build React Native mobile app with Expo.
+Create PWA web-mobile app with React + Vite.
+Build admin dashboard with Next.js.
+Set up Kong API gateway.
+Implement Temporal workflows.
+Configure Docker Compose for local dev.
+Set up monitoring stack.
+Create tests (unit, integration, e2e).
+Write deployment scripts.
+Create Makefile with common commands.
+Set up environment variables and configuration.
+
+//////////////////   new RAed me //
+# BuildBrainOS - AI Co-Pilot for Construction Execution
+
+BuildBrainOS is a proactive AI agent ecosystem that automates the "invisible work" of construction. It serves General Contractors (GCs), Subcontractors, and Superintendents by providing intelligent automation for project management, compliance, safety, and payments.
+
+## 🚀 Vision
+
+"Procore stores data. BuildBrain thinks."
+
+BuildBrainOS eliminates 70-80% of administrative overhead in construction by:
+- Auto-scheduling subcontractors with GPS verification
+- Predicting RFIs and change orders before delays occur
+- Ensuring compliance with real-time insurance validation
+- Providing voice-activated mobile assistance
+- Matching bids intelligently via AI
+- Accelerating payments with AI-verified work completion
+
+## 🏗️ Architecture Overview
+
+### Three-Layer Stack
+
+1. **The "OS" – Execution & Compliance Engine** (Core SaaS)
+   - Blueprint Intelligence Agent
+   - Contract & Compliance Agent
+   - Subcontractor Co-Pilot
+   - RFI & Change Order Predictor
+   - Safety Monitor
+   - Voice Interface
+
+2. **The "Wedge" – Smart Bidding & Submittals Marketplace**
+   - BidBrain AI Matcher
+   - Private Bid Portal
+   - AI Scoring System
+
+3. **The "Bank" – Embedded Fintech & Insurance**
+   - PayBrain (Dynamic Factoring)
+   - SafeRate Insurance
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Mobile App**: React Native + Expo (iOS/Android)
+- **Web Mobile**: React + Vite (PWA for tablets/field)
+- **Web Desktop**: Next.js 14 (Admin Portal)
+
+### Backend
+- **API Gateway**: Kong (Node.js)
+- **Microservices**: NestJS (TypeScript)
+- **AI Agents**: FastAPI (Python)
+- **Orchestration**: Temporal.io + LangGraph
+
+### Data
+- **Database**: MongoDB with Prisma ORM
+- **Vector DB**: Qdrant for RAG
+- **Cache**: Redis
+- **File Storage**: AWS S3
+
+### AI/ML
+- **Reasoning**: Llama 3.1 70B (via Groq/vLLM)
+- **Vision**: Qwen-2.5-VL
+- **Orchestration**: LangGraph
+
+### Infrastructure
+- **Containerization**: Docker
+- **Orchestration**: Kubernetes
+- **Cloud**: AWS (EKS, S3, CloudFront)
+- **Monitoring**: Prometheus, Grafana, Sentry
+
+## 📊 Business Model
+
+### Revenue Streams
+- **Core SaaS**: $40/user/month (min 50 users) → $20M ARR
+- **Bid Marketplace**: $500–$5K per awarded bid → $50M ARR
+- **PayBrain**: 1% fee on verified payments → $50M ARR
+- **SafeRate**: 15% commission on premiums → $30M ARR
+- **Enterprise API**: $10k–$100k/year → $5M ARR
+
+**Total ARR Projection**: Year 1: $8M → Year 5: $322M+
+
+## 🎯 MVP Scope
+
+### Core Features
+1. **User Authentication & Profiles** (GCs, Subs, Supers)
+2. **Project Management** (CRUD operations)
+3. **Blueprint Upload & Basic OCR** (Text extraction)
+4. **Bid Marketplace** (Post bids, apply, basic matching)
+5. **Compliance Upload** (Insurance docs, basic validation)
+6. **Safety Logging** (Photo upload, basic analysis)
+7. **Payment Processing** (Stripe integration)
+8. **Mobile App** (Basic navigation, offline sync)
+9. **Admin Dashboard** (User/Project management)
+
+### AI Features (MVP)
+- Basic blueprint text extraction
+- Simple bid matching algorithm
+- OCR for compliance documents
+- Basic safety photo classification
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- Python 3.9+
+- Docker & Docker Compose
+- MongoDB
+- Redis
+
+### Local Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-org/buildbrainos.git
+   cd buildbrainos
+   ```
+
+2. **Environment Setup**
+   ```bash
+   cp env.example .env
+   # Edit .env with your configuration
+   ```
+
+3. **Start Infrastructure**
+   ```bash
+   make infra-up
+   ```
+
+4. **Install Dependencies**
+   ```bash
+   make install
+   ```
+
+5. **Run Migrations**
+   ```bash
+   make migrate
+   ```
+
+6. **Start Services**
+   ```bash
+   make dev
+   ```
+
+### Development Commands
+
+```bash
+# Start all services
+make dev
+
+# Run tests
+make test
+
+# Build for production
+make build
+
+# Deploy to staging
+make deploy-staging
+
+# Clean up
+make clean
+```
+
+
+
+
+
+## 📁 Project Structure
+
+```
+buildbrainos/
+├── client/                       # Multi-platform UI
+│   ├── mobile/                   # React Native + Expo
+│   ├── web-mobile/               # PWA (React + Vite)
+│   └── web-desktop/              # Admin Portal (Next.js)
+├── gateway/                      # Kong API Gateway
+├── services/                     # NestJS Microservices
+│   ├── auth-service/
+│   ├── user-service/
+│   ├── project-service/
+│   ├── document-service/
+│   ├── compliance-service/
+│   ├── marketplace-service/
+│   ├── payment-service/
+│   ├── notification-service/
+│   └── analytics-service/
+├── ai-agents/                    # Python FastAPI Microservices
+│   ├── blueprint-agent/
+│   ├── safety-agent/
+│   ├── compliance-ocr-agent/
+│   ├── bid-scraper-agent/
+│   └── scheduler-agent/
+├── orchestration/                # Temporal.io + LangGraph
+├── data/                         # Data Layer
+│   ├── mongodb/                  # Prisma schema
+│   ├── qdrant/                   # Vector DB
+│   └── redis.conf
+├── infra/                        # Infrastructure as Code
+├── monitoring/                   # Observability
+├── admin-dashboard/             # Next.js Web Portal
+├── tests/                        # Testing Suite
+└── scripts/                      # Deployment Scripts
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is proprietary software. All rights reserved.
+
+## 📞 Contact
+
+For questions or partnerships, contact: hello@buildbrainos.com
+
+---
+
+**BuildBrainOS** – The AI Operating System for Construction Execution
+
+Implement all NestJS microservices (auth, user, project, document, compliance, marketplace, payment, notification, analytics).
+Create shared types package for type consistency.
+Implement Python FastAPI AI agents.
+Build React Native mobile app with Expo.
+Create PWA web-mobile app with React + Vite.
+Build admin dashboard with Next.js.
+Set up Kong API gateway.
+Implement Temporal workflows.
+Configure Docker Compose for local dev.
+Set up monitoring stack.
+Create tests (unit, integration, e2e).
+Write deployment scripts.
+Create Makefile with common commands.
+Set up environment variables and configuration.
+
+///////////////////////////////  new Prisma Full stack Engeneering.//
+
+
+// Prisma schema for BuildBrainOS - Construction AI Agent Ecosystem
+// Using MongoDB as the database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// User model - Supports GCs, Subs, Superintendents
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  email         String   @unique
+  password      String?
+  firstName     String
+  lastName      String
+  phone         String?
+  role          UserRole @default(SUBCONTRACTOR)
+  companyId     String?  @db.ObjectId
+  company       Company? @relation(fields: [companyId], references: [id])
+  avatar        String?
+  isActive      Boolean  @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  projects      UserProject[]
+  bids          Bid[]
+  payments      Payment[]
+  compliance    ComplianceRecord[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+// Company model - GCs, Subcontractors, etc.
+model Company {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  type            CompanyType
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  country         String        @default("US")
+  phone           String?
+  email           String?
+  website         String?
+  licenseNumber   String?
+  insuranceExpiry DateTime?
+  bondingCapacity Float?
+  unionStatus     Boolean       @default(false)
+  isVerified      Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  users           User[]
+  projects        Project[]
+  bids            Bid[]
+
+  @@map("companies")
+}
+
+// Project model - Core construction projects
+model Project {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  startDate   DateTime?
+  endDate     DateTime?
+  budget      Float?
+  status      ProjectStatus @default(PLANNING)
+  companyId   String       @db.ObjectId
+  company     Company      @relation(fields: [companyId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  users       UserProject[]
+  bids        Bid[]
+  documents   Document[]
+  rfis        RFI[]
+  safetyLogs  SafetyLog[]
+  payments    Payment[]
+
+  @@map("projects")
+}
+
+// Junction table for project users
+model UserProject {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String           @db.ObjectId
+  user      User             @relation(fields: [userId], references: [id])
+  projectId String           @db.ObjectId
+  project   Project          @relation(fields: [projectId], references: [id])
+  role      ProjectUserRole
+  joinedAt  DateTime         @default(now())
+
+  @@unique([userId, projectId])
+  @@map("user_projects")
+}
+
+// Bid model - Marketplace bids
+model Bid {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String     @db.ObjectId
+  project     Project    @relation(fields: [projectId], references: [id])
+  companyId   String     @db.ObjectId
+  company     Company    @relation(fields: [companyId], references: [id])
+  userId      String     @db.ObjectId
+  user        User       @relation(fields: [userId], references: [id])
+  amount      Float
+  description String?
+  status      BidStatus  @default(PENDING)
+  aiScore     Float?     // AI matching score
+  submittedAt DateTime   @default(now())
+  awardedAt   DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("bids")
+}
+
+// Document model - Blueprints, contracts, etc.
+model Document {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  type        DocumentType
+  url         String
+  projectId   String       @db.ObjectId
+  project     Project      @relation(fields: [projectId], references: [id])
+  uploadedBy  String       @db.ObjectId
+  uploadedByUser User      @relation(fields: [uploadedBy], references: [id])
+  extractedText String?    // AI-extracted text
+  metadata    Json?        // AI-extracted metadata
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("documents")
+}
+
+// RFI model - Requests for Information
+model RFI {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String    @db.ObjectId
+  project     Project   @relation(fields: [projectId], references: [id])
+  title       String
+  description String
+  status      RFIStatus @default(OPEN)
+  priority    Priority  @default(MEDIUM)
+  createdBy   String    @db.ObjectId
+  createdByUser User    @relation(fields: [createdBy], references: [id])
+  assignedTo  String?   @db.ObjectId
+  assignedToUser User?  @relation(fields: [assignedTo], references: [id])
+  dueDate     DateTime?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("rfis")
+}
+
+// Safety Log model
+model SafetyLog {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  projectId   String         @db.ObjectId
+  project     Project        @relation(fields: [projectId], references: [id])
+  type        SafetyLogType
+  description String
+  location    String?
+  photos      String[]       // URLs to uploaded photos
+  violations  String[]       // Detected violations
+  reportedBy  String         @db.ObjectId
+  reportedByUser User        @relation(fields: [reportedBy], references: [id])
+  aiAnalysis  Json?          // AI safety analysis
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("safety_logs")
+}
+
+// Compliance Record model
+model ComplianceRecord {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String            @db.ObjectId
+  user          User              @relation(fields: [userId], references: [id])
+  type          ComplianceType
+  documentUrl   String
+  expiryDate    DateTime
+  status        ComplianceStatus  @default(PENDING)
+  verifiedAt    DateTime?
+  verifiedBy    String?
+  aiValidation  Json?             // AI OCR validation results
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@map("compliance_records")
+}
+
+// Payment model - PayBrain functionality
+model Payment {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  projectId     String         @db.ObjectId
+  project       Project        @relation(fields: [projectId], references: [id])
+  fromUserId    String         @db.ObjectId
+  fromUser      User           @relation(fields: [fromUserId], references: [id])
+  toUserId      String         @db.ObjectId
+  toUser        User           @relation(fields: [toUserId], references: [id])
+  amount        Float
+  description   String
+  status        PaymentStatus  @default(PENDING)
+  stripeId      String?        // Stripe payment intent ID
+  aiVerified    Boolean        @default(false)
+  verifiedAt    DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("payments")
+}
+
+// Notification model
+model Notification {
+  id        String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String             @db.ObjectId
+  user      User               @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean            @default(false)
+  data      Json?              // Additional data
+  createdAt DateTime           @default(now())
+
+  @@map("notifications")
+}
+
+// Subscription model for SaaS billing
+model Subscription {
+  id                String             @id @default(auto()) @map("_id") @db.ObjectId
+  companyId         String             @db.ObjectId
+  company           Company            @relation(fields: [companyId], references: [id])
+  plan              SubscriptionPlan
+  status            SubscriptionStatus @default(ACTIVE)
+  stripeCustomerId  String
+  stripeSubscriptionId String
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@map("subscriptions")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  GENERAL_CONTRACTOR
+  SUBCONTRACTOR
+  SUPERINTENDENT
+  PROJECT_MANAGER
+}
+
+enum CompanyType {
+  GENERAL_CONTRACTOR
+  SUBCONTRACTOR
+  SUPPLIER
+  ARCHITECT
+  ENGINEER
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectUserRole {
+  OWNER
+  MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum BidStatus {
+  PENDING
+  SUBMITTED
+  AWARDED
+  REJECTED
+  WITHDRAWN
+}
+
+enum DocumentType {
+  BLUEPRINT
+  CONTRACT
+  SPECIFICATION
+  PERMIT
+  INSURANCE
+  OTHER
+}
+
+enum RFIStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum SafetyLogType {
+  INSPECTION
+  INCIDENT
+  VIOLATION
+  CORRECTION
+}
+
+enum ComplianceType {
+  INSURANCE
+  LICENSE
+  CERTIFICATION
+  BONDING
+}
+
+enum ComplianceStatus {
+  PENDING
+  VERIFIED
+  EXPIRED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum NotificationType {
+  BID_ALERT
+  RFI_ASSIGNED
+  SAFETY_ALERT
+  PAYMENT_DUE
+  COMPLIANCE_EXPIRING
+  PROJECT_UPDATE
+}
+
+enum SubscriptionPlan {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  UNPAID
+}
+
+
+
+////////////
+
+
+
+
+
+
+
+
+
+
 
 
