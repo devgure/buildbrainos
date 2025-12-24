@@ -1,0 +1,42 @@
+name: E2E Tests (docker-compose)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'services/**'
+      - 'client/**'
+      - 'docker-compose.yml'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services: {}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and start services with docker-compose
+        run: |
+          docker compose up -d --build
+
+      - name: Wait for services
+        run: |
+          chmod +x ./scripts/wait-for-services.sh
+          ./scripts/wait-for-services.sh
+
+      - name: Run e2e tests (auth-service)
+        working-directory: services/auth-service
+        env:
+          USER_SERVICE_URL: http://localhost:4002
+          AUTH_URL: http://localhost:4001
+        run: |
+          npm ci
+          npm run e2e
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

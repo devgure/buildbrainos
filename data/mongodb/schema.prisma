@@ -1,0 +1,284 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String @id @map("_id") @default(auto()) @db.ObjectId
+  name      String
+  email     String @unique
+  companyId String?
+  role      String @default("user")
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id        String @id @map("_id") @default(auto()) @db.ObjectId
+  name      String
+  address   String?
+  ownerId   String
+  createdAt DateTime @default(now())
+}
+
+model Bid {
+  id        String @id @map("_id") @default(auto()) @db.ObjectId
+  title     String
+  budget    Int?
+  source    String?
+  createdAt DateTime @default(now())
+}
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db_mongo {
+  provider = "mongodb"
+  url      = env("MONGO_URL")
+}
+
+datasource db_pg {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+// ========== PostgreSQL (Structured) ==========
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name          String
+  phone         String?
+  role          UserRole @default(GC_ADMIN)
+  company       Company? @relation(fields: [companyId], references: [id])
+  companyId     String?
+  createdAt     DateTime @default(now())
+  lastActive    DateTime?
+  verified      Boolean  @default(false)
+
+  // Relations
+  projects      Project[]
+  bidsSubmitted Bid[]
+  bidsManaged   Project[]
+}
+
+model Company {
+  id            String   @id @default(uuid())
+  name          String
+  type          CompanyType // GC, SUB, INSURER
+  ein           String?  @unique
+  address       String?
+  city          String?
+  state         String?
+  zip           String?
+  unionAffilated Boolean @default(false)
+  bondingLimit  Float?  // in USD
+  createdAt     DateTime @default(now())
+
+  users         User[]
+  insuranceDocs InsuranceDocument[]
+}
+
+enum UserRole {
+  GC_ADMIN
+  GC_PROJECT_MGR
+  SUPERINTENDENT
+  SUB_CONTRACTOR
+  SUB_ADMIN
+}
+
+enum CompanyType {
+  GENERAL_CONTRACTOR
+  SUBCONTRACTOR
+  INSURANCE_CARRIER
+}
+
+model Project {
+  id               String    @id @default(uuid())
+  name             String
+  address          String
+  city             String
+  state            String
+  zip              String
+  status           ProjectStatus @default(PLANNING)
+  blueprintPdfUrl  String?   // S3 link
+  contractPdfUrl   String?
+  ownerId          String
+  owner            User      @relation(fields: [ownerId], references: [id])
+  companyId        String
+  company          Company   @relation(fields: [companyId], references: [id])
+  createdAt        DateTime  @default(now())
+  startDate        DateTime?
+  endDate          DateTime?
+
+  // Relations
+  rfis             RFI[]
+  punchLists       PunchList[]
+  bids             Bid[]
+  payments         Payment[]
+  safetyLogs       SafetyLog[]
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+model Bid {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id])
+  postedById    String
+  postedBy      User     @relation(fields: [postedById], references: [id])
+  status        BidStatus @default(DRAFT)
+  budgetMin     Float?
+  budgetMax     String?
+  deadline      DateTime
+  documents     String[] // S3 URLs
+  createdAt     DateTime @default(now())
+
+  submissions   BidSubmission[]
+}
+
+enum BidStatus {
+  DRAFT
+  LIVE
+  CLOSED
+  AWARDED
+  CANCELLED
+}
+
+model BidSubmission {
+  id          String   @id @default(uuid())
+  bidId       String
+  bid         Bid      @relation(fields: [bidId], references: [id])
+  subCompanyId String
+  subCompany  Company  @relation(fields: [subCompanyId], references: [id])
+  submittedBy String
+  submitter   User     @relation(fields: [submittedBy], references: [id])
+  price       Float
+  notes       String?
+  documents   String[] // S3 + DocuSign links
+  status      SubmissionStatus @default(PENDING_REVIEW)
+  createdAt   DateTime @default(now())
+}
+
+enum SubmissionStatus {
+  PENDING_REVIEW
+  SHORTLISTED
+  AWARDED
+  REJECTED
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id])
+  subCompanyId  String
+  subCompany    Company  @relation(fields: [subCompanyId], references: [id])
+  amount        Float
+  status        PaymentStatus @default(PENDING_VERIFICATION)
+  verifiedByAI  Boolean  @default(false)
+  photoEvidence String? // S3
+  gpsCoords     String? // "lat,lng"
+  paidAt        DateTime?
+  fee           Float    @default(0.01) // 1%
+  stripePaymentId String?
+  createdAt     DateTime @default(now())
+}
+
+
+model Subscription {
+  id           String   @id @map("_id") @default(auto()) @db.ObjectId
+  companyId    String   @db.ObjectId
+  stripeSubId  String?
+  tier         String
+  status       String
+  createdAt    DateTime @default(now())
+}
+
+
+
+enum PaymentStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  PAID
+  DISPUTED
+  REJECTED
+}
+
+model InsuranceDocument {
+  id          String   @id @default(uuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+  type        InsuranceType
+  policyNumber String
+  expiryDate  DateTime
+  coverageAmount Float
+  trade       String? // e.g., "Electrical"
+  documentUrl String   // S3 PDF
+  isValid     Boolean  @default(false)
+  verifiedAt  DateTime?
+  createdAt   DateTime @default(now())
+}
+
+enum InsuranceType {
+  GENERAL_LIABILITY
+  WORKERS_COMP
+  AUTO
+  UMBRELLA
+}
+
+// ========== MongoDB (Unstructured) ==========
+
+model BlueprintAnalysis {
+  id           String  @id @map("_id") @db.ObjectId
+  projectId    String
+  rawText      String
+  components   Json    // { walls: [...], electrical: [...] }
+  dependencies Json    // phase sequencing
+  warnings     Json    // potential clashes
+  processedAt  DateTime @default(now())
+}
+
+model RFI {
+  id           String  @id @map("_id") @db.ObjectId
+  projectId    String
+  title        String
+  description  String
+  drawingRef   String?
+  emailRef     String? // email thread ID
+  riskScore    Float   // 0.0–1.0
+  predictedDelay Int    // days
+  status       String  // Open, Resolved
+  createdAt    DateTime @default(now())
+}
+
+model SafetyLog {
+  id           String  @id @map("_id") @db.ObjectId
+  projectId    String
+  photoUrl     String
+  ppeDetected  Json    // { hardhat: true, vest: false }
+  violationRisk Float  // 0.0–1.0
+  location     String?
+  timestamp    DateTime @default(now())
+  resolved     Boolean @default(false)
+}
+
+model SafetyInspection {
+  id         String   @id @map("_id") @default(auto()) @db.ObjectId
+  projectId  String   @db.ObjectId
+  inspector  String?
+  photos     Json?
+  issues     Json?
+  score      Int?
+  createdAt  DateTime @default(now())
+}

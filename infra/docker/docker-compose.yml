@@ -1,0 +1,97 @@
+version: '3.8'
+services:
+  gateway:
+    build:
+      context: ../../gateway
+    ports:
+      - '3000:3000'
+    depends_on:
+      - auth-service
+      - payment-service
+      - blueprint-agent
+  payment-service:
+    build:
+      context: ../../services/payment-service
+    ports:
+      - '5001:5001'
+    environment:
+      - STRIPE_KEY=${STRIPE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - DATABASE_URL=mongodb://mongo:27017/buildbraindb
+    depends_on:
+      - auth-service
+  blueprint-agent:
+    build:
+      context: ../../ai-agents/blueprint-agent
+    ports:
+      - '8001:8001'
+  document-service:
+    build:
+      context: ../../services/document-service
+    ports:
+      - '4004:4004'
+  compliance-service:
+    build:
+      context: ../../services/compliance-service
+    ports:
+      - '4005:4005'
+  marketplace-service:
+    build:
+      context: ../../services/marketplace-service
+    ports:
+      - '4006:4006'
+  user-service:
+    build:
+      context: ../../services/user-service
+    ports:
+      - '4002:4002'
+  project-service:
+    build:
+      context: ../../services/project-service
+    ports:
+      - '4003:4003'
+  notification-service:
+    build:
+      context: ../../services/notification-service
+    ports:
+      - '4007:4007'
+  analytics-service:
+    build:
+      context: ../../services/analytics-service
+    ports:
+      - '4008:4008'
+  auth-service:
+    build:
+      context: ../../services/auth-service
+    ports:
+      - '4001:4001'
+    environment:
+      - AUTH_SECRET=${AUTH_SECRET}
+  web-mobile:
+    build:
+      context: ../../client/web-mobile
+    ports:
+      - '3001:3001'
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
+    depends_on:
+      - gateway
+  web-desktop:
+    build:
+      context: ../../client/web-desktop
+    ports:
+      - '3002:3002'
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+    depends_on:
+      - gateway
+  mongo:
+    image: mongo:6
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:

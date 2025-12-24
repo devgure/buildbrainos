@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Subscription {
+  id        String @id @map("_id") @default(auto()) @db.ObjectId
+  companyId String
+  stripeCustomerId String?
+  plan      String
+  createdAt DateTime @default(now())
+}
+
+model StripeAccount {
+  id             String @id @map("_id") @default(auto()) @db.ObjectId
+  accountId      String @unique
+  companyId      String?
+  country        String?
+  email          String?
+  businessType   String?
+  capabilities   Json?
+  createdAt      DateTime @default(now())
+}
+
+model PaymentIntentRecord {
+  id            String   @id @map("_id") @default(auto()) @db.ObjectId
+  intentId      String   @unique
+  amount        Int
+  currency      String
+  status        String
+  customerId    String?
+  accountId     String?  // connected account
+  createdAt     DateTime @default(now())
+}
+
+model PayoutRecord {
+  id            String   @id @map("_id") @default(auto()) @db.ObjectId
+  payoutId      String   @unique
+  amount        Int
+  currency      String
+  status        String
+  accountId     String?
+  createdAt     DateTime @default(now())
+}

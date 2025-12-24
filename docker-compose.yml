@@ -1,0 +1,99 @@
+version: '3.8'
+services:
+  gateway:
+    build: ./gateway
+    ports:
+      - '3000:3000'
+    environment:
+      - AUTH_URL=http://auth-service:4001
+      - USER_URL=http://user-service:4002
+      - PROJECT_URL=http://project-service:4003
+      - PAYMENT_URL=http://payment-service:5001
+    depends_on:
+      - auth-service
+      - user-service
+      - project-service
+      - payment-service
+
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - '4001:4001'
+    environment:
+      - AUTH_SECRET=${AUTH_SECRET}
+
+  user-service:
+    build: ./services/user-service
+    ports:
+      - '4002:4002'
+
+  project-service:
+    build: ./services/project-service
+    ports:
+      - '4003:4003'
+
+  payment-service:
+    build: ./services/payment-service
+    ports:
+      - '5001:5001'
+    environment:
+      - STRIPE_KEY=${STRIPE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - DATABASE_URL=mongodb://mongo:27017/buildbraindb
+    depends_on:
+      - auth-service
+      - mongo
+      - notification-service
+      - analytics-service
+
+  blueprint-agent:
+    build: ./ai-agents/blueprint-agent
+    ports:
+      - '8001:8001'
+
+  web-mobile:
+    build: ./client/web-mobile
+    ports:
+      - '3001:3001'
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - gateway
+
+  web-desktop:
+    build: ./client/web-desktop
+    ports:
+      - '3002:3002'
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    depends_on:
+      - gateway
+  notification-service:
+    build: ./services/notification-service
+    ports:
+      - '4007:4007'
+    depends_on:
+      - gateway
+  analytics-service:
+    build: ./services/analytics-service
+    ports:
+      - '4008:4008'
+    depends_on:
+      - gateway
+  marketplace-service:
+    build: ./services/marketplace-service
+    ports:
+      - '4006:4006'
+    depends_on:
+      - gateway
+
+  mongo:
+    image: mongo:6
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
